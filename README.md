@@ -1,4 +1,4 @@
-# lib-rcons
+# lib-rcon
 lib-rcon C# Rcon support for minecraft, including using rcon to modify minecraft servers without using mods.
 
 This library will have support for a asynchronous TCP/IP client connecting to Minecraft's version of RCon allowing for a session , authentication and command transmission/reception. The RCon portion allows for synchronous operation as well.
