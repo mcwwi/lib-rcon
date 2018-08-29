@@ -279,6 +279,24 @@ namespace LibMCRcon.RCon
 
                     do
                     {
+
+                        if (cli.Client.Poll(0, SelectMode.SelectRead))
+                        {
+                            byte[] buff = new byte[1];
+                            if (cli.Client.Receive(buff, SocketFlags.Peek) == 0)
+                            {
+                                //client seems to be closed - lets close it
+
+                                StateTCP = TCPState.CLOSED;
+                                StateRCon = RConState.NETWORK_FAIL;
+                                AbortTCP = true;
+                                break;
+                            }
+
+                        }
+                       
+
+
                         if (cli.Available > 0)
                         {
 
@@ -337,12 +355,26 @@ namespace LibMCRcon.RCon
             catch (Exception ee)
             {
                 AbortTCP = true;
-                LastTCPError = ee.Message;
+                var sb = new StringBuilder();
+
+                var ex = ee;
+                do
+                {
+                    sb.AppendLine(ex.Message);
+                    ex = ee.InnerException;
+                } while (ex != null);
+
+
+
+                LastTCPError = sb.ToString();
+
                 StateTCP = TCPState.ABORTED;
                 StateRCon = RConState.NETWORK_FAIL;
             }
 
-            
+            if (cli.Connected)
+                cli.Close();
+
         }
 
         private void ShutDownComms()
