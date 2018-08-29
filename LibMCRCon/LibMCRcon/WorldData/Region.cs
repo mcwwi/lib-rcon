@@ -63,7 +63,6 @@ namespace LibMCRcon.WorldData
             ChunkLoad(mca, Chunk);
             return nbtChunk;
         }
-
         public NbtChunkSection NbtChunkSection(RegionMCA mca, Voxel Chunk)
         {
 

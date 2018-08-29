@@ -1,5 +1,8 @@
-﻿
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.IO.Compression;
 using System.IO;
 
@@ -8,7 +11,7 @@ using LibMCRcon.Nbt;
 
 namespace LibMCRcon.WorldData
 {
-    public class ChunkMCA
+    public class ChunkMCAEx
     {
         public int chunksectorsize { get; protected set; }
         public DateTime timestamp { get; protected set; }
@@ -17,7 +20,7 @@ namespace LibMCRcon.WorldData
         public bool chunkloaded { get; private set; }
         public bool chunkexists { get; private set; }
 
-        public ChunkMCA()
+        public ChunkMCAEx()
         {
 
             chunksectorsize = 0;
@@ -26,7 +29,7 @@ namespace LibMCRcon.WorldData
 
 
         }
-        public ChunkMCA(int ChunkOffset, int ChunkSectorsSize, Stream readstream)
+        public ChunkMCAEx(int ChunkOffset, int ChunkSectorsSize, Stream readstream)
         {
 
 
@@ -55,8 +58,8 @@ namespace LibMCRcon.WorldData
 
 
         }
-        
-        public NbtCompound chunkNBT
+
+        public NbtCompound ChunkCompoundNbt
         {
             get
             {
@@ -96,5 +99,12 @@ namespace LibMCRcon.WorldData
 
             }
         }
+        public NbtChunk NbtChunk()
+        {
+            return new NbtChunk(ChunkCompoundNbt);
+        }
+
+       
+
     }
 }

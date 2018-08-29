@@ -18,8 +18,8 @@ namespace LibMCRcon.WorldData
         public NbtByte terrainPopulated { get; private set; }
         public NbtByte V { get; private set; }
         public NbtLong inhabitedTime { get; private set; }
-        public NbtByteArray biomes { get; private set; }
-        public NbtIntArray heightMap { get; private set; }
+        public NbtIntArray biomes { get; private set; }
+        public NbtCompound heightMap { get; private set; }
         public NbtList sections { get; private set; }
         public NbtList entities { get; private set; }
         public NbtList tileEntities { get; private set; }
@@ -27,6 +27,7 @@ namespace LibMCRcon.WorldData
 
         public bool IsLoaded { get; private set; }
 
+       
         private void LoadChunkData(NbtCompound chunkdata)
         {
             xPos = (NbtInt)chunkdata["xPos"];
@@ -45,9 +46,21 @@ namespace LibMCRcon.WorldData
         private void LoadForSurvey(NbtCompound chunkdata)
         {
             sections = (NbtList)chunkdata["Sections"];
-            biomes = (NbtByteArray)chunkdata["Biomes"];
-            heightMap = (NbtIntArray)chunkdata["HeightMap"];
+            if (sections != null)
+            {
+                var c = chunkdata["Biomes"];
+                if (c.tagtype == NbtType.TAG_array_byte)
+                {
 
+                }
+
+                biomes = (NbtIntArray)chunkdata["Biomes"];
+                heightMap = (NbtCompound)chunkdata["Heightmaps"];
+            }
+            else
+            {
+
+            }
         }
         private void LoadForEntities(NbtCompound chunkdata)
         {
@@ -79,21 +92,25 @@ namespace LibMCRcon.WorldData
         {
             if (heightMap == null)
                 return 255;
-
-            return heightMap.tagvalue[((z & 0x000F) * 16) + (x & 0x000F)];
+            return 0;
+           // return heightMap.tagvalue[((z & 0x000F) * 16) + (x & 0x000F)];
         }
         public int Height(int ChunkZXIdx)
         {
             if (heightMap == null)
                 return 255;
-            return heightMap.tagvalue[ChunkZXIdx];
+            return 0;
+
+            //return heightMap.tagvalue[ChunkZXIdx];
         }
 
         public int[] HeightData
         {
             get
             {
-                return heightMap.tagvalue;
+                return new int[] { };
+
+                //return heightMap.tagvalue;
             }
         }
 
@@ -113,7 +130,7 @@ namespace LibMCRcon.WorldData
 
         }
 
-        public byte[] BiomeData
+        public int[] BiomeData
         {
             get
             {

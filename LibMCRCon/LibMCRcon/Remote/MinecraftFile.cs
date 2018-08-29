@@ -748,11 +748,11 @@ namespace LibMCRcon.Remote
         }
 
 
-        public Action Start(bool FullRender, string RegionDirectory, string ImgsDirectory, System.Diagnostics.Process TogosJavaProc)
+        public Action Start(Rendering.BlockColors bc, string RegionDirectory, string ImgsDirectory)
         {
             return delegate()
             {
-                Process(FullRender, RegionDirectory, ImgsDirectory, TogosJavaProc);
+                Process(bc, RegionDirectory, ImgsDirectory);
             };
         }
         public Action DownloadMCA(MinecraftTransfer DL, String RegionDirectory)
@@ -775,13 +775,11 @@ namespace LibMCRcon.Remote
             };
         }
 
-        public void Process(bool FullRender, string RegionDirectory, string ImgsDirectory, System.Diagnostics.Process TogosJavaProc)
+        public void Process(Rendering.BlockColors bc, string RegionDirectory, string ImgsDirectory)
         {
 
 
-            if (FullRender == true)
-            {
-
+  
                 byte[][] MapData = new byte[][] { new byte[512 * 512], new byte[512 * 512] };
                 Color[] BlockData = new Color[512 * 512];
 
@@ -790,9 +788,9 @@ namespace LibMCRcon.Remote
 
                 mca.LoadRegion(Xs, Zs);
 
-                Rendering.MCRegionMaps.RenderDataFromRegion(mca, MapData, BlockData);
+                Rendering.MCRegionMaps.RenderDataFromRegion(bc,mca, MapData, BlockData);
                 Rendering.MCRegionMaps.RenderTopoPngFromRegion(MapData, ImgsDirectory, Xs, Zs);
-                //LibMCRcon.Rendering.MCRegionMaps.RenderBlockPngFromRegion(MapData, BlockData, ImgsDir.FullName, RV);
+                Rendering.MCRegionMaps.RenderBlockPngFromRegion(MapData, BlockData, ImgsDirectory, Xs, Zs);
 
 
                 FileInfo mcaH = HDTFileInfo(RegionDirectory);
@@ -809,9 +807,7 @@ namespace LibMCRcon.Remote
                 mcaH.LastWriteTime = mca.LastModified;
 
 
-                TogosJavaProc.StartInfo.Arguments = string.Format("-jar tmcmr.jar -f -o {0} {1}", ImgsDirectory, FileName(MineCraftRegionFileKind.MCA, Xs, Zs, 0));
-                if (TogosJavaProc.Start() == true)
-                    TogosJavaProc.WaitForExit();
+
                 
                 FileInfo lwFS = null;
 
@@ -823,32 +819,12 @@ namespace LibMCRcon.Remote
                 if (lwFS.Exists)
                     lwFS.LastWriteTime = mca.LastModified;
             }
-            else
-            {
-                byte[][] MapData = new byte[][] { new byte[512 * 512], new byte[512 * 512] };
-
-                FileInfo Hdt = HDTFileInfo(RegionDirectory);
-                FileStream tempFS = Hdt.Open(FileMode.Open, FileAccess.Read);
-
-                tempFS.Read(MapData[0], 0, 512 * 512);
-                tempFS.Read(MapData[1], 0, 512 * 512);
-                tempFS.Close();
+            
 
 
-                LibMCRcon.Rendering.MCRegionMaps.RenderTopoPngFromRegion(MapData, ImgsDirectory, Xs, Zs);
+        
 
-                FileInfo lwFS = null;
-
-                lwFS = TOPOFileInfo(ImgsDirectory);
-                if (lwFS.Exists)
-                    lwFS.LastWriteTime = Hdt.LastWriteTime;
-
-            }
-
-
-        }
-
-        public void FullProcess(MinecraftTransfer DL, MinecraftTransfer IMG, MinecraftTransfer HDT, MinecraftTransfer MCA, bool FullRender, int Age, string RegionDirectory, string ImgsDirectory)
+        public void FullProcess(Rendering.BlockColors bc, MinecraftTransfer DL, MinecraftTransfer IMG, MinecraftTransfer HDT, MinecraftTransfer MCA, bool FullRender, int Age, string RegionDirectory, string ImgsDirectory)
         {
 
             FileInfo FI = null;
@@ -856,7 +832,7 @@ namespace LibMCRcon.Remote
             if (DL != null)
                 DL.TransferNext(MCAFileInfo(RegionDirectory), TxRx.RECEIVE);
 
-            Process(FullRender, RegionDirectory, ImgsDirectory, JavaTopoProc(RegionDirectory));
+            Process(bc, RegionDirectory, ImgsDirectory);
 
             FI = TOPOFileInfo(ImgsDirectory);
             if (FI.Exists == true)

@@ -1,39 +1,42 @@
-﻿
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.IO;
 using LibMCRcon.Nbt;
 
 namespace LibMCRcon.WorldData
 {
-    public class RegionMCA:Region
+    public class RegionMCAEx : WorldVoxelEx
     {
+      
+        private Int32[] chunkhdr { get; set; }  = new Int32[1024];
+        private Int32[] chunksect { get; set; } = new Int32[1024];
+        private DateTime[] timehdr { get; set; } = new DateTime[1024];
 
-        private Int32[] chunkhdr = new Int32[1024];
-        private Int32[] chunksect = new Int32[1024];
-        private DateTime[] timehdr = new DateTime[1024];
-
-        ChunkMCA[] chunks = new ChunkMCA[1024];
+        ChunkMCAEx[] chunks { get; set; } = new ChunkMCAEx[1024];
 
         int lastX = -1;
         int lastZ = -1;
 
         public int Count { get; set; }
 
-        string mcaFilePath = string.Empty;
+        string mcaFilePath { get; set; } = string.Empty;
 
         public DateTime LastModified { get; set; }
 
-        public RegionMCA()
+        public RegionMCAEx()
         {
 
             lastX = int.MaxValue;
             lastZ = int.MaxValue;
-         
+
 
 
         }
 
-        public RegionMCA(string regionPath)
+        public RegionMCAEx(string regionPath)
             : this()
         {
             mcaFilePath = regionPath;
@@ -47,17 +50,17 @@ namespace LibMCRcon.WorldData
 
         }
 
-        public void LoadRegion() { LoadRegion(Xs, Zs); }
-
+        public void LoadRegion() { LoadRegion(Xs,Zs); }
         public void LoadRegion(int RegionX, int RegionZ)
         {
-            SetSegmentOffset(RegionX, RegionZ, 0, 0);
+            R = 2;
+            Xs = RegionX; Zs = RegionZ;
 
             if (lastX != RegionX || lastZ != RegionZ)
             {
                 lastX = RegionX;
                 lastZ = RegionZ;
-              
+
                 FileInfo f = Remote.MinecraftFile.FileInfo(Remote.MineCraftRegionFileKind.MCA, lastX, lastZ, mcaFilePath);
 
                 LastModified = DateTime.MaxValue;
@@ -91,7 +94,7 @@ namespace LibMCRcon.WorldData
                             try
                             {
                                 fs.Seek(chunkhdr[c], SeekOrigin.Begin);
-                                chunks[c] = new ChunkMCA(chunkhdr[c], chunksect[c], fs);
+                                chunks[c] = new ChunkMCAEx(chunkhdr[c], chunksect[c], fs);
                                 Count += 1;
                             }
                             catch (Exception)
@@ -109,7 +112,15 @@ namespace LibMCRcon.WorldData
 
         }
 
-        public ChunkMCA this[int index]
+
+        public int ChunkIdx()
+        {
+            throw (new Exception("Not Implemented"));
+        }
+
+
+
+        public ChunkMCAEx this[int index]
         {
             get
             {
@@ -118,13 +129,18 @@ namespace LibMCRcon.WorldData
                 return chunks[index];
             }
         }
-        public ChunkMCA this[int ChunkX, int ChunkZ]
+        public ChunkMCAEx this[int ChunkX, int ChunkZ]
         {
             get
             {
                 return this[(ChunkZ * 32) + ChunkX];
             }
         }
+
+        NbtChunk nbtChunk;
+        NbtChunkSection[] nbtChunkSection = new NbtChunkSection[16];
+
+
 
         public bool IsLoaded { get { return Count > 0; } }
 

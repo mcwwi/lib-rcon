@@ -10,21 +10,29 @@ namespace LibMCRcon.Remote
     {
         public DateTime MinListDate { get; set; }
         public DateTime MaxListDate { get; set; }
+        public DateTime FilterDate { get; set; }
         public List<MCTransferInfo> RemoteList { get; set; }
+        public List<MCTransferInfo> FilteredList { get; set; }
 
         public MCTransferInfoList()
         {
             RemoteList = new List<MCTransferInfo>();
+            FilteredList = new List<MCTransferInfo>();
+
             MinListDate = DateTime.MaxValue;
             MaxListDate = DateTime.MinValue;
         }
 
-        public MCTransferInfoList(List<MCTransferInfo> RemoteList)
+        public MCTransferInfoList(List<MCTransferInfo> RemoteList, TimeSpan Age)
         {
-            this.RemoteList = RemoteList;
+            this.RemoteList = RemoteList ?? new List<MCTransferInfo>();
+
             MinListDate = DateTime.MaxValue;
             MaxListDate = DateTime.MinValue;
+            FilterDate = DateTime.Now - Age;
+
             RemoteList.ForEach(x => CalculateAge(x));
+            FilterList(FilterDate);
         }
 
         private void CalculateAge(MCTransferInfo mcf)
@@ -34,6 +42,11 @@ namespace LibMCRcon.Remote
 
             if (mcf.RemoteLastWrite > MaxListDate)
                 MaxListDate = mcf.RemoteLastWrite;
+        }
+        public void FilterList(DateTime Cuttoff)
+        {
+            FilteredList = new List<MCTransferInfo>();
+            RemoteList.ForEach(x => { if (x.RemoteLastWrite >= Cuttoff) FilteredList.Add(x); });
         }
     }
     public class MCTransferInfo
@@ -181,7 +194,8 @@ namespace LibMCRcon.Remote
     public class MCTransferJson<T> where T : class, new()
     {
         public T Data { get; set; }
-        public bool LastError { get; set; }
+        public bool LastError { get; set; } = false;
+        public bool AquireLeaseError { get; set; } = false;
 
         public MCTransferJson()
         {
@@ -193,6 +207,7 @@ namespace LibMCRcon.Remote
             this.Data = Data;
             LastError = false;
         }
+
     }
 
     public abstract class MCTransfer
@@ -201,7 +216,7 @@ namespace LibMCRcon.Remote
 
         public string RemotePath { get; set; }
         public bool StopTransfer { get; set; }
-        public bool LastTranserSuccess { get; set; }
+        public bool LastTransferSuccess { get; set; }
         public string LastError { get; set; }
        
 
@@ -336,7 +351,7 @@ namespace LibMCRcon.Remote
                     }
                     catch
                     {
-                        LastTranserSuccess = false;
+                        LastTransferSuccess = false;
                         throw;
                     }
                     
@@ -348,6 +363,153 @@ namespace LibMCRcon.Remote
 
         }
        
+    }
+    public abstract class MCTransferAsync
+    {
+
+
+        public string RemotePath { get; set; }
+        public bool StopTransfer { get; set; }
+        public bool LastTranserSuccess { get; set; }
+        public string LastError { get; set; }
+
+
+
+        public string FullRemotePath(string RootPath, string FileName)
+        {
+            if (RemotePath == string.Empty)
+                return string.Format("{0}/{1}", RootPath, FileName);
+            else
+                return string.Format("{0}/{1}/{2}", RootPath, RemotePath, FileName);
+
+
+        }
+        public TxRx Direction { get; set; }
+
+
+        public abstract Task<bool> ValidateTransfer(FileInfo item, TxRx Direction);
+        public abstract Task<int> TransferItemAge(FileInfo item, TxRx Direction);
+        public abstract Task<bool> TransferNext(FileInfo item, TxRx Direction);
+        public abstract Task<bool> TransferNext(string FileName, Stream item, TxRx Direction);
+
+        public abstract Task<bool> Exists(string FileName);
+        public abstract Task<int> Age(string FileName);
+
+        public abstract Task<List<MCTransferInfo>> GetRemoteData();
+        public abstract Task<List<MCTransferInfo>> GetRemoteData(string RemotePath);
+        public abstract Task<List<MCTransferInfo>> GetRemoteData(string RemotePath, string Filter);
+
+        public bool LockOut { get; set; }
+        public abstract Task Open();
+        public abstract void Close();
+
+        public bool IsOpen { get; set; }
+
+        public async Task TransferRun(TransferQueue<FileInfo> Items, TxRx Direction, bool Continous = false)
+        {
+           await TransferRun(Items, null, Direction, Continous);
+        }
+        public async Task TransferRun(TransferQueue<FileInfo> Items, TransferQueue<FileInfo> Finished, TxRx Direction, bool Continous = false)
+        {
+            if (IsOpen == false)
+               await Open();
+
+            if (IsOpen)
+            {
+
+                FileInfo item;
+
+                while (Items.Count > 0 || Continous)
+                {
+
+                    item = Items.Dequeue();
+
+                    if (item != null)
+                        if (await ValidateTransfer(item, Direction))
+                            await TransferNext(item, Direction);
+
+                    if (Finished != null)
+                        Finished.Enqueue(item);
+
+                    if (StopTransfer) break;
+                }
+            }
+
+        }
+
+        public async Task<bool> Upload(FileInfo Item)
+        {
+            return await TransferNext(Item, TxRx.SEND);
+        }
+
+        public async Task<bool> Upload(Stream Item, string FileName)
+        {
+            return await TransferNext(FileName, Item, TxRx.SEND);
+        }
+        public async Task<bool> Download(FileInfo Item)
+        {
+            return await TransferNext(Item, TxRx.RECEIVE);
+        }
+        public async Task<bool> Download(Stream Item, string FileName)
+        {
+            return await TransferNext(FileName, Item, TxRx.RECEIVE);
+        }
+
+
+        public async Task<bool> UploadJsonObject<T>(T Item, string FileName) where T : new()
+        {
+
+            bool ok = false;
+            var data = System.Text.Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(Item));
+            using (var mem = new MemoryStream(data))
+            {
+                ok = await TransferNext(FileName, mem, TxRx.SEND);
+            }
+            return ok;
+
+
+        }
+
+        public async Task<bool> UploadJsonObject<T>(T[] Item, string FileName) where T : new()
+        {
+
+            bool ok = false;
+            var data = System.Text.Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(Item));
+            using (var mem = new MemoryStream(data))
+            {
+                ok = await TransferNext(FileName, mem, TxRx.SEND);
+            }
+            return ok;
+
+
+        }
+        public async Task<MCTransferJson<T>> DownloadJsonObject<T>(string FileName) where T : class, new()
+        {
+
+            using (var mem = new MemoryStream())
+            {
+                if (await TransferNext(FileName, mem, TxRx.RECEIVE) == true)
+                {
+                    try
+                    {
+                        var js = System.Text.Encoding.UTF8.GetString(mem.ToArray());
+                        return new MCTransferJson<T>(JsonConvert.DeserializeObject<T>(js));
+                    }
+                    catch
+                    {
+                        LastTranserSuccess = false;
+                        throw;
+                    }
+
+                }
+                else
+                    return new MCTransferJson<T>();
+
+            }
+
+        }
+
+
     }
 
     public abstract class MinecraftTransfer
@@ -364,11 +526,11 @@ namespace LibMCRcon.Remote
             else
                 return string.Format("{0}/{1}/{2}", RootPath, RemotePath, FileName);
 
-            
+
         }
         public TxRx Direction { get; set; }
-        
-        
+
+
         public abstract bool ValidateTransfer(FileInfo item, TxRx Direction);
         public abstract int TransferItemAge(FileInfo item, TxRx Direction);
         public abstract bool TransferNext(FileInfo item, TxRx Direction);
@@ -440,7 +602,7 @@ namespace LibMCRcon.Remote
         }
         public async Task<bool> Upload(Stream Item, string FileName)
         {
-            return await Task.Run(() => TransferNext(FileName,  Item, TxRx.SEND));
+            return await Task.Run(() => TransferNext(FileName, Item, TxRx.SEND));
         }
         public async Task<bool> Download(FileInfo Item)
         {
@@ -453,10 +615,10 @@ namespace LibMCRcon.Remote
 
 
     }
-  
-
-    
 
 
-    
+
+
+
+
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using LibMCRcon.WorldData;
@@ -6,242 +7,261 @@ using LibMCRcon.Remote;
 
 namespace LibMCRcon.Rendering
 {
-    public static class MCRegionMaps
+
+    public class BitChunker : List<int>
     {
-        public static Color[][] BlockPalette()
+
+        public BitChunker(Int64[] Source)
         {
-            Color[][] Blocks = new Color[256][];
 
-            for (int x = 0; x < 256; x++)
+            BitBlitz(Source, (Source.Length * 64) / 4096);
+        }
+        public BitChunker(Int64[] Source, int BitSizeOverride)
+        {
+            BitBlitz(Source, BitSizeOverride);
+        }
+
+        public void BitBlitz(Int64[] Source, int BitSize)
+        {
+
+            int block_index = 0;
+            int bits_remaining = 64;
+            int bits_left_over = 0;
+            int bitsource_idx = 1;
+            int bitsource_max = Source.Length;
+
+            ulong working = 0;
+            ulong split_left_over = 0;
+
+
+            Clear();
+
+            if (BitSize < 4)
+                BitSize = 4;
+
+            ulong mask = (ulong)~(-1U << BitSize);
+            working = (ulong)Source[0];
+
+            while (true)
             {
-                switch (x)
+
+                while (bits_remaining >= BitSize)
                 {
-                    case 1://stone
-                        Blocks[x] = new Color[] { Color.Gray };
-                        break;
-                    case 2://grass
-                        Blocks[x] = new Color[] { Color.Green };
-                        break;
-                    case 3://dirt
-                        Blocks[x] = new Color[] { Color.Brown };
-                        break;
-                    case 4://cobble
-                        Blocks[x] = new Color[] { Color.LightGray };
-                        break;
-                    case 5://wood plank
-                        Blocks[x] = new Color[] { ColorStep.MixColors(80, Color.Brown, Color.Black) };
-                        break;
-                    case 6://sapling
-                        Blocks[x] = new Color[] { Color.Green };
-                        break;
-                    case 7://bed rock
-                        Blocks[x] = new Color[] { Color.DarkGray };
-                        break;
-                    case 8://flowing water
-                    case 9://water
-                        Blocks[x] = new Color[] { Color.Blue };
-                        break;
+                    block_index = (int)(working & mask);
+                    working >>= BitSize;
+                    bits_remaining -= BitSize;
 
-                    case 10://flo lava
-                    case 11://lava
-                        Blocks[x] = new Color[] { Color.Orange };
-                        break;
-                    case 12://sand
-                        Blocks[x] = new Color[] { ColorStep.MixColors(90, Color.Beige, Color.Black) };
-                        break;
-                    case 13://gravel
-                        Blocks[x] = new Color[] { ColorStep.MixColors(50, Color.Gray, Color.Black) };
-                        break;
-                    case 14://gold ore
-                        Blocks[x] = new Color[] { Color.Yellow };
-                        break;
-                    case 15://iron ore
-                    case 16://coal ore
-                        Blocks[x] = new Color[] { ColorStep.MixColors(30, Color.Gold, Color.Black) };
-                        break;
-                    case 17://wood
-                        Blocks[x] = new Color[] { Color.Brown };
-                        break;
-                    case 18://leaves
-                    case 161://Acacia Leaves (0),(1) dark oak leaves
-                    case 162://acacia wood (0), (1) dark oak wood
-                        Blocks[x] = new Color[] { Color.DarkGreen };
-                        break;
-                    case 19://sponge
-                        Blocks[x] = new Color[] { Color.Beige };
-                        break;
-                    case 20://glass
-                        Blocks[x] = new Color[] { Color.LightBlue };
-                        break;
-                    case 21://lapis ore
-                    case 22://lapis block
-                        Blocks[x] = new Color[] { Color.DarkBlue };
-                        break;
-                    case 24://sandstone
-                        Blocks[x] = new Color[] { ColorStep.MixColors(90, Color.Beige, Color.Black) };
-                        break;
-                    case 35://wool
-                    case 41://gold block
-                    case 42://iron block
-                    case 43://x2 stone slab
-                    case 44://stone slab
-                        Blocks[x] = new Color[] { Color.Gray };
-                        break;
-                    //  case 45://bricks
-                    case 49://obsidian
-                        Blocks[x] = new Color[] { Color.DarkViolet };
-                        break;
-                    case 51://fire
-                        Blocks[x] = new Color[] { Color.Orange };
-                        break;
-                    //case 52://monster spawner
-                    case 56://diamond ore
-                    case 57://diamond block
-                        Blocks[x] = new Color[] { Color.LightBlue };
-                        break;
-                    case 59://wheat crops
-                        Blocks[x] = new Color[] { Color.Wheat };
-                        break;
-                    case 60://farmland
-                        Blocks[x] = new Color[] { Color.BurlyWood };
-                        break;
-                    case 73://redstone ore
-                    case 74://glowing redstone ore
-                        Blocks[x] = new Color[] { Color.Red };
-                        break;
-                    case 78://snow
-                        Blocks[x] = new Color[] { Color.White };
-                        break;
-                    case 79://ice
-                        Blocks[x] = new Color[] { Color.SkyBlue };
-                        break;
-                    case 80://snow block
-                        Blocks[x] = new Color[] { Color.White };
-                        break;
-                    case 81://cactus
-                        Blocks[x] = new Color[] { Color.MediumSpringGreen };
-                        break;
-                    case 82://clay
-                        Blocks[x] = new Color[] { Color.Gray };
-                        break;
-                    case 83://sugar canes
-                        Blocks[x] = new Color[] { Color.LimeGreen };
-                        break;
-                    case 86://pumpkins
-                        Blocks[x] = new Color[] { Color.DarkOrange };
-                        break;
-                    case 87://netherrack
-                        Blocks[x] = new Color[] { Color.DarkRed };
-                        break;
-                    case 88://soul sand
-                        Blocks[x] = new Color[] { Color.DarkGray };
-                        break;
-                    case 89://glow stone
-                        Blocks[x] = new Color[] { Color.Goldenrod };
-                        break;
-                    case 90://nether portal
-                        Blocks[x] = new Color[] { Color.PaleVioletRed };
-                        break;
-                    case 91://jack o'Lantern
-                        Blocks[x] = new Color[] { Color.DarkOrange };
-                        break;
-                    //case 95://stained glass
-                    case 98://stone bricks
-                        Blocks[x] = new Color[] { Color.Gray };
-                        break;
-                    case 99://mushroom block (brown)
-                        Blocks[x] = new Color[] { ColorStep.MixColors(75, Color.Beige, Color.Brown) };
-                        break;
-                    case 100://mushroom block (red)
-                        Blocks[x] = new Color[] { Color.DeepPink };
-                        break;
-                    case 103://melon block
-                        Blocks[x] = new Color[] { Color.Lime };
-                        break;
-                    case 110://mycelium
-                        Blocks[x] = new Color[] { Color.MediumAquamarine };
-                        break;
-                    case 112://nether brick
-                        Blocks[x] = new Color[] { Color.Maroon };
-                        break;
-                    case 125://x2 wood slab
-                    case 126://wood slab
-                        Blocks[x] = new Color[] { Color.BurlyWood };
-                        break;
-                    case 129://emerald ore
-                    case 133://emerald block
-                        Blocks[x] = new Color[] { Color.LightGreen };
-                        break;
-                    case 137://command block
-                    case 141://carrots
-                        Blocks[x] = new Color[] { ColorStep.MixColors(80, Color.Orange, Color.White) };
-                        break;
-                    case 142://potatoes
-                        Blocks[x] = new Color[] { Color.DarkGoldenrod };
-                        break;
-                    case 152://redstone block
-                        Blocks[x] = new Color[] { Color.Red };
-                        break;
-                    case 153://nether quartz block
-                    case 155://quartz block
-                        Blocks[x] = new Color[] { Color.MintCream };
-                        break;
+                    Add(block_index);
+                }
 
-                    case 159://white stained clay
+                if (bits_left_over > 0)
+                {
+
+                    working |= (split_left_over << bits_remaining);
+                    bits_remaining += bits_left_over;
+                    bits_left_over = 0;
+                }
+                else if (bitsource_idx < bitsource_max)
+                {
 
 
-                        Blocks[x] = new Color[16] {Color.Beige,Color.Beige,Color.Beige,Color.Beige,Color.Beige
-                                            ,Color.Beige,Color.Beige,Color.Beige,Color.Beige,Color.Beige,Color.Beige,Color.Beige
-                                            ,Color.Beige,Color.Beige,Color.Beige,Color.Beige
-                                        };
+                    split_left_over = (ulong)Source[bitsource_idx];
 
-                        break;
-
-                    //case 160://stained glass
-
-                    //case 165://slime block
-                    //case 166://barrier
-                    case 168://prismarine
-                    case 169://sea lantern
-                        Blocks[x] = new Color[] { Color.SeaGreen };
-                        break;
-
-                    case 170://hay bale
-                        Blocks[x] = new Color[] { Color.LightYellow };
-                        break;
-                    case 171://carpet (0-white, 1-15)
-                        Blocks[x] = new Color[16] {Color.Beige,Color.Beige,Color.Beige,Color.Beige,Color.Beige
-                                            ,Color.Beige,Color.Beige,Color.Beige,Color.Beige,Color.Beige,Color.Beige,Color.Beige
-                                            ,Color.Beige,Color.Beige,Color.Beige,Color.Beige
-                                        };
-
-                        break;
-                    case 172://hardened clay
-                        Blocks[x] = new Color[] { Color.Firebrick };
-                        break;
-                    case 173://block of coal
-                        Blocks[x] = new Color[] { Color.Black };
-                        break;
-                    case 174://packed ice
-                        Blocks[x] = new Color[] { Color.LightSkyBlue };
-                        break;
-                    case 179://red sandstone
-                    case 181://x2 red sandstone slab
-                    case 182://red sandstone slab
-
-                        Blocks[x] = new Color[] { Color.Firebrick };
-                        break;
-
-                    default:
-                        Blocks[x] = new Color[] { Color.Gray };
-                        break;
+                    split_left_over <<= bits_remaining;
+                    bits_left_over = bits_remaining;
+                    working |= split_left_over;
+                    split_left_over = (ulong)Source[bitsource_idx] >> (64 - bits_left_over);
+                    bits_remaining = 64;
+                    bitsource_idx++;
 
 
                 }
+                else
+                    break;
+
+
+            };
+
+
+
+        }
+        public int Max()
+        {
+            var idx_max = int.MinValue;
+
+            foreach (var idx in this)
+                if (idx > idx_max)
+                    idx_max = idx;
+
+            return idx_max;
+        }
+
+    }
+    public class RegionMasterPaletteWithBlocks
+    {
+        public List<string> MasterPalette { get; private set; } = new List<string>();
+        public int[] RegionBlockStates { get; private set; } = new int[512 * 512];
+
+        int rbs_idx = 0;
+        int rbs_next = 0;
+
+        public void PrimeNextBlock(string block)
+        {
+            if (MasterPalette.Contains(block) == false)
+            {
+                MasterPalette.Add(block);
+                rbs_idx = rbs_next;
+                rbs_next++;
+            }
+            else
+                rbs_idx = MasterPalette.FindIndex((x) => x.Equals(block));
+        }
+        public void SetBlock(int ridx, string block)
+        {
+            PrimeNextBlock(block);
+            RegionBlockStates[ridx] = rbs_idx;
+        }
+
+        public IEnumerable<Tuple<string, int>> Range(int idx)
+        {
+            for (var id = idx; id < idx + 100; idx++)
+            {
+                yield return new Tuple<string, int>(MasterPalette[RegionBlockStates[id]], id);
+            }
+            yield break;
+        }
+    }
+    public class BlockColors
+    {
+        public List<KeyValuePair<string, Color>> BlockPalettes { get; private set; } = new List<KeyValuePair<string, Color>>();
+        public List<string> Defaulted { get; private set; } = new List<string>();
+
+        public BlockColors()
+        {
+
+            BlockPalettes.Add(new KeyValuePair<string, Color>("lilac", Color.Violet));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("rose_bush", Color.MistyRose));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("sunflower", Color.LightYellow));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("oxeye_daisy", Color.FloralWhite));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("azure_bluet", Color.Azure));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("peony", Color.Azure));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("pumpkin", Color.Orange));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("fern", Color.LawnGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("large_fern", Color.LawnGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("gray_wool", Color.Gray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("obsidian", Color.BlueViolet));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("farmland", Color.SandyBrown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("birch_sapling", Color.Beige));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("glass", Color.CornflowerBlue));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("potatoes", Color.Tan));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("attached_melon_stem", Color.GreenYellow));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("melon", Color.GreenYellow));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("melon_stem", Color.Brown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("pumpkin_stem", Color.Brown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("attached_pumpkin_stem", Color.Orange));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("birch_slab", Color.Beige));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("yellow_carpet", Color.Yellow));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("wall_sign", Color.Tan));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("podzol", Color.LightGray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("purple_stained_glass", Color.Purple));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("cobweb", Color.Gray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("mushroom_stem", Color.Beige));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("orange_tulip", Color.Orange));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("red_tulip", Color.Red));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("white_tulip", Color.White));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("pink_tulip", Color.Pink));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("white_bed", Color.White));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("carved_pumpkin", Color.Orange));
+
+            BlockPalettes.Add(new KeyValuePair<string, Color>("fence", Color.Brown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("kelp", Color.DarkGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("pad", Color.DarkGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("lava", Color.OrangeRed));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("water", Color.DarkBlue));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("clay", Color.DarkGray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("gravel", Color.Gray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("stone", Color.Gray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("ore", Color.Gray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("andesite", Color.Silver));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("diorite", Color.LightGray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("granite", Color.IndianRed));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("coral", Color.LightPink));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("seagrass", Color.MediumSeaGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("sea_pickle", Color.DarkOliveGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("sand", Color.BlanchedAlmond));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("wood", Color.Brown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("dirt", Color.SaddleBrown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("grass", Color.Green));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("snow", Color.White));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("leaves", Color.DarkGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("air", Color.Transparent));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("planks", Color.BurlyWood));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("spruce", Color.BurlyWood));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("oak", Color.Tan));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("jungle", Color.Tan));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("brown_mushroom", Color.Tan));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("vine", Color.DarkGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("red_mushroom", Color.DarkRed));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("dandelion", Color.Gainsboro));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("poppy", Color.DarkRed));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("bubble", Color.OldLace));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("orchid", Color.DodgerBlue));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("sugar_cane", Color.LightGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("cactus", Color.ForestGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("dead", Color.Sienna));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("chest", Color.Brown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("crafting", Color.Brown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("terracotta", Color.RosyBrown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("furnace", Color.Gray));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("acacia", Color.IndianRed));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("magma", Color.OrangeRed));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("wheat", Color.LightGreen));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("beetroots", Color.Firebrick));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("ladder", Color.Brown));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("carrots", Color.Orange));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("torch", Color.Tan));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("black_wool", Color.Black));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("ice", Color.DodgerBlue));
+            BlockPalettes.Add(new KeyValuePair<string, Color>("log", Color.Tan));
+
+        }
+        public Color[] GetPalette(List<string> BlockList)
+        {
+            var lst_idx = 0;
+            var lst_idxMax = BlockList.Count;
+            Color[] Rainbow = new Color[lst_idxMax];
+
+            for (; lst_idx < lst_idxMax; lst_idx++)
+            {
+                var block = BlockList[lst_idx].Split(':')[1];
+
+                Color SelectColor()
+                { 
+                  
+                    foreach(var kv in BlockPalettes)
+                    {
+                        if (block.Contains(kv.Key))
+                            return kv.Value;
+                    }
+
+                    if (Defaulted.Find(x => x.Equals(block)) == null)
+                        Defaulted.Add(block);
+
+                    return Color.Gray;
+                }
+
+                Rainbow[lst_idx] = SelectColor();
+
             }
 
-            return Blocks;
+            return Rainbow;
         }
+
+    }
+
+    public static class MCRegionMaps
+    {
+              
         public static Color[][] Palettes()
         {
 
@@ -285,506 +305,6 @@ namespace LibMCRcon.Rendering
             return new Color[][] { Topo, Water };
         }
 
-        //public static void WorldStiched(string ImagesPath, Voxel V, int Size = 4, string ImgType = "topo")
-        //{
-
-
-        //    DirectoryInfo imgDir = new DirectoryInfo(ImagesPath);
-        //    string SaveBitMap = string.Format(Path.Combine(imgDir.FullName, string.Format("{2}worldcent.{0}.{1}.{3}.png", V.Xs, V.Zs, ImgType, Size)));
-
-        //    Voxel R = MinecraftOrdinates.Region(V);
-
-        //    FileInfo fQ;
-        //    Graphics g;
-        //    Image bQ = null;
-
-        //    Bitmap b1 = new Bitmap(Size * 3, Size * 3);
-        //    g = Graphics.FromImage(b1);
-
-        //    for (int zr = 0; zr < 3; zr++)
-        //        for (int xr = 0; xr < 3; xr++)
-        //        {
-
-        //            fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs + (-1 + xr), R.Zs + (-1 + zr), ImgType)));
-        //            if (fQ.Exists)
-        //            {
-        //                bQ = Image.FromFile(fQ.FullName);
-        //                g.DrawImage(bQ, xr * Size, zr * Size, Size, Size);
-        //                bQ.Dispose();
-        //            }
-
-        //        }
-
-        //    g.Dispose();
-
-        //    b1.Save(SaveBitMap, System.Drawing.Imaging.ImageFormat.Png);
-        //    b1.Dispose();
-
-        //    return;
-
-        //}
-        //public static void RegionStiched(string ImagesPath, Voxel V, string ImgType = "topo", int Size = 172)
-        //{
-
-        //    if (Size > 512 || Size < 0)
-        //        return;
-
-
-        //    DirectoryInfo imgDir = new DirectoryInfo(ImagesPath);
-        //    string SaveBitMap = string.Format(Path.Combine(imgDir.FullName, string.Format("{2}regioncent.{0}.{1}.{3}.png", V.Xs, V.Zs, ImgType, Size)));
-
-        //    Voxel R = MinecraftOrdinates.Region(V);
-
-        //    FileInfo fQ;
-        //    Graphics g;
-        //    Image bQ = null;
-
-        //    Bitmap b1 = new Bitmap(Size * 3, Size * 3);
-        //    g = Graphics.FromImage(b1);
-
-        //    for (int zr = 0; zr < 3; zr++)
-        //        for (int xr = 0; xr < 3; xr++)
-        //        {
-
-        //            fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs + (-1 + xr), R.Zs + (-1 + zr), ImgType)));
-        //            if (fQ.Exists)
-        //            {
-        //                bQ = Image.FromFile(fQ.FullName);
-        //                g.DrawImage(bQ, xr * Size, zr * Size, Size, Size);
-        //                bQ.Dispose();
-        //            }
-
-        //        }
-
-        //    g.Dispose();
-
-        //    b1.Save(SaveBitMap, System.Drawing.Imaging.ImageFormat.Png);
-        //    b1.Dispose();
-
-        //    return;
-
-        //}
-        //public static async void Stitched(MinecraftTransfer Images, MinecraftTransfer Stitched, Voxel V, string ImgType = "topo")
-        //{
-
-
-        //    string SaveBitMap = string.Format("{2}cent.{0}.{1}.png", V.Xs, V.Zs, ImgType);
-
-        //    Voxel R = MinecraftOrdinates.Region(V);
-
-        //    R.X -= 256;
-        //    R.Z -= 256;
-
-        //    int sx = R.Xo;
-        //    int sy = R.Zo;
-
-        //    Rectangle fR = new Rectangle();
-        //    string fQ;
-
-        //    Bitmap b1;
-        //    Graphics g;
-        //    Image bQ = null;
-
-        //    Bitmap b2 = new Bitmap(512, 512);
-
-        //    if (sx == 0 && sy == 0)
-        //    {
-        //        b1 = new Bitmap(512, 512);
-        //        g = Graphics.FromImage(b1);
-
-
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs, ImgType);
-
-
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 0, 0);
-        //                bQ.Dispose();
-        //            }
-        //        }
-
-        //    }
-        //    else if (sx > 0 && sy == 0)
-        //    {
-        //        b1 = new Bitmap(1024, 512);
-        //        g = Graphics.FromImage(b1);
-
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs, ImgType);
-
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 0, 0);
-        //                bQ.Dispose();
-        //            }
-        //        }
-
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs + 1, R.Zs, ImgType);
-
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 512, 0);
-        //                bQ.Dispose();
-        //            }
-        //        }
-        //    }
-
-        //    else if (sx == 0 && sy > 0)
-        //    {
-        //        b1 = new Bitmap(512, 1024);
-        //        g = Graphics.FromImage(b1);
-
-
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs, ImgType);
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 0, 0);
-        //                bQ.Dispose();
-        //            }
-        //        }
-
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs + 1, ImgType);
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 0, 512);
-        //                bQ.Dispose();
-        //            }
-        //        }
-        //    }
-        //    else
-        //    {
-        //        b1 = new Bitmap(1024, 1024);
-        //        g = Graphics.FromImage(b1);
-
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs, ImgType);
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 0, 0);
-        //                bQ.Dispose();
-        //            }
-        //        }
-
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs + 1, R.Zs, ImgType);
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 512, 0);
-        //                bQ.Dispose();
-        //            }
-        //        }
-
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs + 1, ImgType);
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 0, 512);
-        //                bQ.Dispose();
-        //            }
-        //        }
-        //        fQ = string.Format("{2}.{0}.{1}.png", R.Xs + 1, R.Zs + 1, ImgType);
-        //        using (MemoryStream ms = new MemoryStream())
-        //        {
-        //            if (await Images.Download(ms,fQ))
-        //            {
-        //                ms.Position = 0;
-        //                bQ = Image.FromStream(ms);
-        //                g.DrawImage(bQ, 512, 512);
-        //                bQ.Dispose();
-        //            }
-        //        }
-        //    }
-
-
-
-
-        //    g.Dispose();
-        //    g = Graphics.FromImage(b2);
-
-        //    fR.X = 0;
-        //    fR.Y = 0;
-        //    fR.Width = 512;
-        //    fR.Height = 512;
-
-        //    g.DrawImage(b1, fR, sx, sy, 512, 512, GraphicsUnit.Pixel);
-
-        //    b1.Dispose();
-        //    g.Dispose();
-
-        //    using (MemoryStream ms = new MemoryStream())
-        //    {
-
-        //        b2.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-
-        //        ms.Position = 0;
-        //        await Stitched.Upload(ms,SaveBitMap);
-        //        b2.Dispose();
-
-        //    }
-        //}
-        //public static void Stitched(string ImagesPath, Voxel V,string ImgType = "topo")
-        //{
-
-        //    DirectoryInfo imgDir = new DirectoryInfo(ImagesPath);
-
-        //    string SaveBitMap = string.Format(Path.Combine(imgDir.FullName, string.Format("{2}cent.{0}.{1}.png", V.Xs, V.Zs, ImgType)));
-           
-        //    Voxel R = MinecraftOrdinates.Region(V);
-            
-        //    R.X -= 256;
-        //    R.Z -= 256;
-
-        //    int sx = R.Xo;
-        //    int sy = R.Zo;
-
-        //    Rectangle fR = new Rectangle();
-        //    FileInfo fQ;
-
-        //    Bitmap b1;
-        //    Graphics g;
-        //    Image bQ = null;
-
-        //    Bitmap b2 = new Bitmap(512, 512);
-
-        //    if (sx == 0 && sy == 0)
-        //    {
-        //        b1 = new Bitmap(512, 512);
-        //        g = Graphics.FromImage(b1);
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 0, 0);
-        //            bQ.Dispose();
-        //        }
-        //    }
-        //    else if (sx > 0 && sy == 0)
-        //    {
-        //        b1 = new Bitmap(1024, 512);
-        //        g = Graphics.FromImage(b1);
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 0, 0);
-        //            bQ.Dispose();
-        //        }
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs + 1, R.Zs, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 512, 0);
-        //            bQ.Dispose();
-        //        }
-        //    }
-        //    else if (sx == 0 && sy > 0)
-        //    {
-        //        b1 = new Bitmap(512, 1024);
-        //        g = Graphics.FromImage(b1);
-
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 0, 0);
-        //            bQ.Dispose();
-        //        }
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs + 1, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 0, 512);
-        //            bQ.Dispose();
-        //        }
-        //    }
-        //    else
-        //    {
-        //        b1 = new Bitmap(1024, 1024);
-        //        g = Graphics.FromImage(b1);
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 0, 0);
-        //            bQ.Dispose();
-        //        }
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs + 1, R.Zs, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 512, 0);
-        //            bQ.Dispose();
-        //        }
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs, R.Zs + 1, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 0, 512);
-        //            bQ.Dispose();
-        //        }
-
-        //        fQ = new FileInfo(Path.Combine(ImagesPath, string.Format("{2}.{0}.{1}.png", R.Xs + 1, R.Zs + 1, ImgType)));
-        //        if (fQ.Exists)
-        //        {
-        //            bQ = Image.FromFile(fQ.FullName);
-        //            g.DrawImage(bQ, 512, 512);
-        //            bQ.Dispose();
-        //        }
-        //    }
-
-
-
-
-        //    g.Dispose();
-        //    g = Graphics.FromImage(b2);
-
-        //    fR.X = 0;
-        //    fR.Y = 0;
-        //    fR.Width = 512;
-        //    fR.Height = 512;
-
-        //    g.DrawImage(b1, fR, sx, sy, 512 ,512, GraphicsUnit.Pixel);
-            
-        //    b1.Dispose();
-        //    g.Dispose();
-
-
-        //    b2.Save(SaveBitMap, System.Drawing.Imaging.ImageFormat.Png);
-        //    b2.Dispose();
-        //}
-        //public static int GenerateWorldMaps(int Scale, string RegionPath, string ImgsPath)
-        //{
-
-        //    Voxel[] V = MinecraftOrdinates.WorldMapBoundries(RegionPath);
-        //    if (512 % Scale != 0)
-        //        return 0;
-
-        //    int Size = 512 / Scale;
-
-        //    int X = Math.Abs(V[0].Xs - V[1].Xs);
-        //    int Z = Math.Abs(V[0].Zs - V[1].Zs);
-
-        //    int A = ((X - (X % Scale)) / Scale) + ((X % Scale) == 0 ? 0 : 1);
-        //    int B = ((Z - (Z % Scale)) / Scale) + ((Z % Scale) == 0 ? 0 : 1);
-
-        //    Brush SolidBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Black);
-
-        //    Bitmap topo;
-        //    Bitmap tile;
-
-        //    topo = new Bitmap(512, 512);
-
-        //    Graphics gBlank = Graphics.FromImage(topo);
-        //    gBlank.FillRectangle(SolidBrush, 0, 0, 512, 512);
-
-
-        //    topo.Save(Path.Combine(ImgsPath, string.Format("worldtopo{0}Empty.png", Size)), System.Drawing.Imaging.ImageFormat.Png);
-        //    topo.Save(Path.Combine(ImgsPath, string.Format("worldtile{0}Empty.png", Size)), System.Drawing.Imaging.ImageFormat.Png);
-
-        //    gBlank.Dispose();
-        //    topo.Dispose();
-
-        //    for (int tZ = 0; tZ < B; tZ++)
-        //        for (int tX = 0; tX < A; tX++)
-        //        {
-
-        //            topo = new Bitmap(512, 512);
-        //            tile = new Bitmap(512, 512);
-
-        //            Image img = null;
-
-        //            Graphics gTopo = Graphics.FromImage(topo);
-        //            Graphics gTile = Graphics.FromImage(tile);
-
-        //            gTopo.FillRectangle(SolidBrush, 0, 0, 512, 512);
-        //            gTile.FillRectangle(SolidBrush, 0, 0, 512, 512);
-
-        //            int xA = (tX * Scale) + V[0].Xs;
-        //            int zB = (tZ * Scale) + V[0].Zs;
-
-        //            int wX1 = xA;
-        //            int wZ1 = zB;
-
-        //            int wX2 = xA + (Scale - 1);
-        //            int wZ2 = zB + (Scale - 1);
-
-        //            for (int z = 0; z < Scale; z++)
-        //                for (int x = 0; x < Scale; x++)
-        //                {
-
-        //                    string ImgTopo = Path.Combine(ImgsPath, string.Format("topo.{0}.{1}.png", xA + x, zB + z));
-        //                    string ImgTile = Path.Combine(ImgsPath, string.Format("tile.{0}.{1}.png", xA + x, zB + z));
-
-
-        //                    if (File.Exists(ImgTopo))
-        //                    {
-        //                        img = Image.FromFile(ImgTopo);
-        //                        gTopo.DrawImage(img, (x * Size), (z * Size), Size, Size);
-        //                        img.Dispose();
-        //                    }
-
-        //                    if (File.Exists(ImgTile))
-        //                    {
-        //                        img = Image.FromFile(ImgTile);
-        //                        gTile.DrawImage(img, (x * Size), (z * Size), Size, Size);
-        //                        img.Dispose();
-        //                    }
-
-        //                }
-
-        //            string TopoFile = Path.Combine(ImgsPath, string.Format("worldtopo{2}.{0}.{1}.{3}.{4}.{5}.{6}.png", tX, tZ, Size, wX1, wX2, wZ1, wZ2));
-        //            string TileFile = Path.Combine(ImgsPath, string.Format("worldtile{2}.{0}.{1}.{3}.{4}.{5}.{6}.png", tX, tZ, Size, wX1, wX2, wZ1, wZ2));
-
-
-        //            topo.Save(TopoFile, System.Drawing.Imaging.ImageFormat.Png);
-        //            tile.Save(TileFile, System.Drawing.Imaging.ImageFormat.Png);
-
-        //            gTopo.Dispose();
-        //            gTile.Dispose();
-        //            topo.Dispose();
-        //            tile.Dispose();
-
-        //        }
-
-        //    return Size;
-        //}
-
         public static void RenderBlockPngFromRegion(byte[][] TopoData, Color[] BlockData, string ImgPath, int Xs, int Zs)
         {
             byte[] hMap = TopoData[0];
@@ -805,9 +325,41 @@ namespace LibMCRcon.Rendering
                     int gI = (zz * 512) + xx;
 
                     if (wMap[gI] < 255)
-                        bit.SetPixel(xx, zz, ColorStep.MixColors(35, BlockData[gI], wRGB[wMap[gI]]));
+
+                        if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
+                        {
+                            int cI = ((zz - 1) * 512) + xx - 1;
+
+                             if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(25, 25, 175), 0));
+                            else if (hMap[cI] < hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(75, 75, 255), 0));
+                            else
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(50, 50, 200), 0));
+                        }
+                        else
+                            bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(50, 50, 200), 0));
+
+
+
+
                     else
+                    {
+
+                        if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
+                        {
+                            int cI = ((zz - 1) * 512) + xx - 1;
+
+                             if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, BlockData[gI], Color.FromArgb(80,80,80), 0));
+                             else if (hMap[cI] < hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, BlockData[gI], Color.FromArgb(200, 200, 200), 0));
+                            else
+                                bit.SetPixel(xx, zz, BlockData[gI]);
+                        }
+                        else
                         bit.SetPixel(xx, zz, BlockData[gI]);
+                    }
                 }
 
             }
@@ -815,7 +367,7 @@ namespace LibMCRcon.Rendering
 
 
             DirectoryInfo imgDir = new DirectoryInfo(ImgPath);
-            string SaveBitMap = string.Format(Path.Combine(imgDir.FullName, MinecraftFile.FileName(MineCraftRegionFileKind.TILE, Xs, Zs)));
+            string SaveBitMap  = string.Format(Path.Combine(imgDir.FullName, string.Format("tile.{0}.{1}.png", Xs, Zs)));
             bit.Save(SaveBitMap, System.Drawing.Imaging.ImageFormat.Png);
             bit.Dispose();
 
@@ -841,18 +393,45 @@ namespace LibMCRcon.Rendering
 
                     if (hWMap[gI] < 255)
 
-                        bit.SetPixel(xx, zz, wRGB[hWMap[gI]]);
+
+
+
+                        if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
+                        {
+                            int cI = ((zz - 1) * 512) + xx - 1;
+                            if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, wRGB[hWMap[gI]], Color.White, 0));
+                            else if (hMap[cI] < hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, wRGB[hWMap[gI]], Color.DarkGray, 0));
+                            else
+                                bit.SetPixel(xx, zz, wRGB[hWMap[gI]]);
+                        }
+                        else
+                            bit.SetPixel(xx, zz, wRGB[hWMap[gI]]);
+
+
                     else
                     {
 
-                        bit.SetPixel(xx, zz, tRGB[hMap[gI]]);
+
+
+                        if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
+                        {
+                            int cI = ((zz - 1) * 512) + xx - 1;
+
+                            if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, tRGB[hMap[gI]], Color.White, 0));
+                            else if (hMap[cI] < hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, tRGB[hMap[gI]], Color.DarkGray, 0));
+                            else
+                                bit.SetPixel(xx, zz, tRGB[hMap[gI]]);
+                        }
+                        else
+                            bit.SetPixel(xx, zz, tRGB[hMap[gI]]);
+
+
                     }
-
-
-
-
                 }
-
             }
 
 
@@ -864,7 +443,6 @@ namespace LibMCRcon.Rendering
             bit.Dispose();
 
         }
-  
         public static void RenderLegend(string ImgPath)
         {
 
@@ -902,14 +480,17 @@ namespace LibMCRcon.Rendering
                 bit.Dispose();
             }
         }
-        
-        public static void RenderDataFromRegion(RegionMCA mca, byte[][] TopoData, Color[] Blocks = null)
+
+        public static void RenderDataFromRegion(BlockColors bc, RegionMCA mca, byte[][] TopoData, Color[] Blocks = null)
         {
 
             byte[] hMap = TopoData[0];
             byte[] hWMap = TopoData[1];
-            Color[][] BlockColors = BlockPalette();
+            
             Voxel Chunk;
+
+            RegionMasterPaletteWithBlocks RegionBlocks = new RegionMasterPaletteWithBlocks();
+
 
 
             if (mca.IsLoaded)
@@ -918,250 +499,166 @@ namespace LibMCRcon.Rendering
                 for (int zz = 0; zz < 32; zz++)
                     for (int xx = 0; xx < 32; xx++)
                     {
+                        var ridx = (zz * 16 * 512) + (xx * 16);
 
 
                         mca.SetOffset(65, xx * 16, zz * 16);
                         mca.RefreshChunk();
                         Chunk = mca.Chunk;
+                        NbtChunk c = null;
+
+                        c = mca.NbtChunk(mca);
+                  
+                        int[,] cGround = new int[16, 16];
+
+                        if (c.IsLoaded && c.sections != null)
+                        {
+                            var sc = c.sections.tagvalue.Count;
+                            var bb = new List<BitChunker>();
+                            var bp = new List<List<string>>();
 
 
-                        NbtChunk c = mca.NbtChunk(mca);
-                        NbtChunkSection s;
-
-
-                        for (int x = 0; x < 16; x++)
-                            for (int z = 0; z < 16; z++)
+                            if (sc > 0)
                             {
-                                Chunk.Xo = x;
-                                Chunk.Zo = z;
-
-                                // c = rVox.NbtChunk(mca);
-                                // Debug.Print("{0} {1} {2}", Chunk.X, Chunk.Z, Chunk.Y);
-                                int cl = c.Height(Chunk.Xo, Chunk.Zo);
-                                if (cl > 255) cl = 255;
-                                if (cl < 0) cl = 0;
-                                if (cl > 0) cl--;
-
-
-                                hMap[(Chunk.WorldZ * 512) + Chunk.WorldX] = (byte)cl;
-                                hWMap[(Chunk.WorldZ * 512) + Chunk.WorldX] = 255;
-
-                                Chunk.WorldY = cl;
-
-                                s = mca.NbtChunkSection(mca);
-
-                                int block = s.BlockID(Chunk.ChunkBlockPos());
-                                int blockdata = s.BlockData(Chunk.ChunkBlockPos());
-
-                                switch (block)
+                                foreach (var sect in c.sections.tagvalue)
                                 {
-                                    case 8:
-                                    case 9:
+                                    var sdata = ((Nbt.NbtLongArray)sect["BlockStates"]).tagvalue;
+                                    var yidx = ((Nbt.NbtByte)sect["Y"]).tagvalue;
+                                    if (sdata.Length > 256)
+                                    {
+
+                                    }
+                                    var pal = ((Nbt.NbtList)sect["Palette"]).tagvalue;
+                                    var bl = new BitChunker(sdata);
+
+                                    bb.Add(bl);
+                                    var bp_block = new List<string>();
 
 
-                                        for (int ycl = cl; ycl > 0; ycl--)
-                                        {
+                                    foreach (var p in pal)
+                                        bp_block.Add(((Nbt.NbtString)p["Name"]).tagvalue);
 
-                                            Chunk.WorldY = ycl;
-                                            s = mca.NbtChunkSection(mca);
-                                            block = s.BlockID(Chunk.ChunkBlockPos());
-
-
-                                            if (block != 9 && block != 8)
-                                            {
-
-                                                hWMap[(Chunk.WorldZ * 512) + Chunk.WorldX] = (byte)ycl;
-
-                                                if (Blocks != null)
-                                                {
-                                                    switch (block)
-                                                    {
-                                                        case 159:
-                                                            blockdata = s.BlockData(Chunk.ChunkBlockPos());
-                                                            if (blockdata > 15 || blockdata < 0)
-                                                                Blocks[(Chunk.WorldZ * 512) + Chunk.WorldX] = BlockColors[block][0];
-                                                            else
-                                                                Blocks[(Chunk.WorldZ * 512) + Chunk.WorldX] = BlockColors[block][blockdata];
-
-                                                            break;
-
-                                                        default:
-                                                            Blocks[(Chunk.WorldZ * 512) + Chunk.WorldX] = BlockColors[block][0];
-                                                            break;
-                                                    }
-                                                }
-
-
-                                                break;
-                                            }
-                                        }
-
-                                        break;
-
-
-                                    default:
-                                        if (Blocks != null)
-                                        {
-                                            switch (block)
-                                            {
-                                                case 159:
-
-                                                    if (blockdata > 15 || blockdata < 0)
-                                                        Blocks[(Chunk.WorldZ * 512) + Chunk.WorldX] = BlockColors[block][0];
-                                                    else
-                                                        Blocks[(Chunk.WorldZ * 512) + Chunk.WorldX] = BlockColors[block][blockdata];
-
-                                                    break;
-
-                                                default:
-                                                    Blocks[(Chunk.WorldZ * 512) + Chunk.WorldX] = BlockColors[block][0];
-                                                    break;
-                                            }
-                                        }
-                                        break;
+                                    bp.Add(bp_block);
                                 }
-
-
-                                /*
-                                switch (block)
-                                {
-                                    case 1://stone
-                                    case 2://grass
-                                    case 3://dirt
-                                    case 4://cobble
-                                    case 5://wood plank
-                                    case 6://sapling
-                                    case 7://bed rock
-                                    case 8://flowing water
-                                    case 9://water
-                                    case 10://flo lava
-                                    case 11://lava
-                                    case 12://sand
-                                    case 13://gravel
-                                    case 14://gold ore
-                                    case 15://iron ore
-                                    case 16://coal ore
-                                    case 17://wood
-                                    case 18://leaves
-                                    case 19://sponge
-                                    case 20://glass
-                                    case 21://lapis ore
-                                    case 22://lapis block
-                                    case 24://sandstone
-                                    case 35://wool
-                                    case 41://gold block
-                                    case 42://iron block
-                                    case 43://x2 stone slab
-                                    case 44://stone slab
-                                    case 45://bricks
-                                    case 49://obsidian
-                                    case 51://fire
-                                    case 52://monster spawner
-                                    case 56://diamond ore
-                                    case 57://diamond block
-                                    case 59://wheat crops
-                                    case 60://farmland
-                                    case 73://redstone ore
-                                    case 74://glowing redstone ore
-                                    case 78://snow
-                                    case 79://ice
-                                    case 80://snow block
-                                    case 81://cactus
-                                    case 82://clay
-                                    case 83://sugar canes
-                                    case 86://pumpkins
-                                    case 87://netherrack
-                                    case 88://soul sand
-                                    case 89://glow stone
-                                    case 90://nether portal
-                                    case 91://jack o'Lantern
-                                    case 95://stained glass
-                                    case 98://stone bricks
-                                    case 99://mushroom block (brown)
-                                    case 100://mushroom block (red)
-                                    case 103://melon block
-                                    case 110://mycelium
-                                    case 112://nether brick
-                                    case 125://x2 wood slab
-                                    case 126://wood slab
-                                    case 129://emerald ore
-                                    case 133://emerald block
-                                    case 137://command block
-                                    case 141://carrots
-                                    case 142://potatoes
-                                    case 152://redstone block
-                                    case 153://nether quartz block
-                                    case 155://quartz block
-                                        break;
-
-                                    case 159://white stained clay
-                                        switch (blockdata)
-                                        {
-
-                                            case 0://white
-                                            case 1://orange
-                                            case 2://magenta
-                                            case 3://light blue
-                                            case 4://yellow
-                                            case 5://lime
-                                            case 6://pink
-                                            case 7://gray
-                                            case 8://light gray
-                                            case 9://cyan
-                                            case 10://purple
-                                            case 11://blue
-                                            case 12://brown
-                                            case 13://green
-                                            case 14://red
-                                            case 15://black
-                                                break;
-
-                                        }
-                                        break;
-
-                                    case 160://stained glass
-                                    case 161://Acacia Leaves (0),(1) dark oak leaves
-                                    case 162://acacia wood (0), (1) dark oak wood
-                                    case 165://slime block
-                                    case 166://barrier
-                                    case 168://prismarine
-                                    case 169://sea lantern
-                                    case 170://hay bale
-                                    case 171://carpet (0-white, 1-15)
-                                    case 172://hardened clay
-                                    case 173://block of coal
-                                    case 174://packed ice
-                                    case 179://red sandstone
-                                    case 181://x2 red sandstone slab
-                                    case 182://red sandstone slab
-
-                                    default:
-                                        break;
-
-
-                                }
-                                 */
 
 
                             }
+                            sc--;
+                            var cidx = 0;
+                            RenderBlocks();
 
+                            void RenderBlocks()
+                            {
+                                var blocksleft = 256;
+
+                                for (var iB = sc; iB > 0; iB--)
+                                {
+                                    var bl = bb[iB];
+                                    var blp = bp[iB];
+
+                                    for (var iC = 15; iC > 0; iC--)
+                                    {
+                                        cidx = iC * 256;
+                                        var h = (iB * 16) + iC;
+
+
+
+                                        for (var cz = 0; cz < 16; cz++)
+                                            for (var cx = 0; cx < 16; cx++, cidx++)
+                                            {
+
+                                                if (cGround[cx, cz] == 0)
+                                                {
+
+                                                    var bidx = bl[cidx];
+                                                    var midx = ridx + ((cz * 512) + cx);
+
+                                                    if (bidx < blp.Count)
+                                                    {
+
+
+                                                        var block = blp[bidx];
+
+
+
+
+                                                        if (block.Contains(":water"))
+                                                        {
+                                                            hWMap[midx] = (byte)h;
+                                                        }
+                                                        else if (block.Contains(":air"))
+                                                        {
+                                                            hWMap[midx] = 255;
+                                                            hMap[midx] = 0;
+                                                        }
+                                                        else
+                                                        {
+
+                                                            RegionBlocks.SetBlock(midx, block);
+
+                                                            cGround[cx, cz] = h;
+                                                            hMap[midx] = (byte)h;
+
+                                                            if (hWMap[midx] == 0)
+                                                                hWMap[midx] = 255;
+
+                                                            --blocksleft;
+                                                            if (blocksleft == 0)
+                                                                return;
+
+                                                        }
+
+                                                    }
+                                                    else
+                                                    {
+                                                        //can't do this... why have index not in palette?
+                                                        cGround[cx, cz] = h;
+                                                        hMap[midx] = (byte)h;
+
+                                                        if (hWMap[midx] == 0)
+                                                            hWMap[midx] = 255;
+
+                                                        --blocksleft;
+                                                        if (blocksleft == 0)
+                                                            return;
+                                                    }
+                                                }
+
+                                            }
+
+                                    }
+
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for (var cz = 0; cz < 16; cz++)
+                                for (var cx = 0; cx < 16; cx++)
+                                {
+                                    var midx = ridx + ((cz * 512) + cx);
+                                    hWMap[midx] = 255;
+                                    hMap[midx] = 0;
+                                    RegionBlocks.SetBlock(midx, "minecraft:void_air");
+                                }
+                        }
                     }
 
+                if (Blocks != null)
+                {
+                    Color[] Pal = bc.GetPalette(RegionBlocks.MasterPalette);
+                    var idx_max = 512 * 512;
+
+                    for (var idx = 0; idx < idx_max; idx++)
+                    {
+                        Blocks[idx] = Pal[RegionBlocks.RegionBlockStates[idx]];
+                    }
+                }
 
             }
-
         }
-       
-        public static byte[][] RenderTopoDataFromRegion(RegionMCA mca)
-        {
 
-            byte[][] topo = new byte[][] { new byte[512 * 512], new byte[512 * 512] };
 
-            RenderDataFromRegion(mca,  topo);
-
-            return topo;
-
-        }
         public static byte[][] RetrieveHDT(Voxel RV, string RegionPath)
         {
             byte[][] MapData = new byte[][] { new byte[512 * 512], new byte[512 * 512] };
@@ -1180,9 +677,9 @@ namespace LibMCRcon.Rendering
 
 
 
-       
-    }
 
+    }
+   
    
 
 }

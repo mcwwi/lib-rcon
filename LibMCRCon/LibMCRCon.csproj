@@ -44,8 +44,11 @@
     <Reference Include="Microsoft.Data.Services.Client, Version=5.8.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\mc\WWW\maps\packages\Microsoft.Data.Services.Client.5.8.3\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.WindowsAzure.Storage, Version=8.7.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\azure-functions\CMHStart\packages\WindowsAzure.Storage.8.7.0\lib\net45\Microsoft.WindowsAzure.Storage.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\..\MCSysop\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\azure-functions\CMHStart\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -63,14 +66,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="LibMCRcon\Remote\MinecraftFileEx.cs" />
+    <Compile Include="LibMCRcon\Remote\MinecraftMaps.cs" />
+    <Compile Include="LibMCRcon\Rendering\MCRegionMapsEx.cs" />
     <Compile Include="LibMCRcon\WorldData\Axis.cs" />
     <Compile Include="LibMCRcon\WorldData\AxisVoxel.cs" />
+    <Compile Include="LibMCRcon\WorldData\ChunkEx.cs" />
     <Compile Include="LibMCRcon\WorldData\ChunkMCA.cs" />
     <Compile Include="LibMCRcon\Remote\MinecraftFile.cs" />
     <Compile Include="LibMCRcon\Remote\MinecraftFileCentered.cs" />
-    <Compile Include="LibMCRcon\Remote\MinecraftFileSync.cs" />
-    <Compile Include="LibMCRcon\Remote\MinecraftFileSyncEventArgs.cs" />
     <Compile Include="LibMCRcon\Remote\MinecraftTransfer.cs" />
     <Compile Include="LibMCRcon\Remote\MinecraftWorldFile.cs" />
     <Compile Include="LibMCRcon\Rendering\ColorStep.cs" />
@@ -84,12 +87,13 @@
     <Compile Include="LibMCRcon\Network\MCHelper.cs" />
     <Compile Include="LibMCRcon\NBT\MCNbt.cs" />
     <Compile Include="LibMCRcon\Remote\TransferQueue.cs" />
+    <Compile Include="LibMCRcon\WorldData\ChunkMCAEx.cs" />
     <Compile Include="LibMCRcon\WorldData\MinecraftOrdinates.cs" />
     <Compile Include="LibMCRcon\WorldData\NbtChunk.cs" />
     <Compile Include="LibMCRcon\WorldData\NbtChunkSection.cs" />
     <Compile Include="LibMCRcon\WorldData\Region.cs" />
-    <Compile Include="LibMCRcon\WorldData\RegionEx.cs" />
     <Compile Include="LibMCRcon\WorldData\RegionMCA.cs" />
+    <Compile Include="LibMCRcon\WorldData\RegionMCAEx.cs" />
     <Compile Include="LibMCRcon\WorldData\Voxel.cs" />
     <Compile Include="LibMCRcon\WorldData\VoxelEx.cs" />
     <Compile Include="WebData\Poi.cs" />

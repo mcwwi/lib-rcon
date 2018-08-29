@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
-using System.IO.Compression;
 using System.IO;
-using System.Collections;
-using System.Drawing;
+
 
 
 namespace LibMCRcon.Nbt
@@ -25,17 +22,12 @@ namespace LibMCRcon.Nbt
         TAG_string = 8,
         TAG_list = 9,
         TAG_compound = 10,
-        TAG_array_int = 11
-
-
-
-
-
+        TAG_array_int = 11,
+        TAG_array_long = 12
     }
 
     public interface INbtValues<T>
     {
-
         T tagvalues { get; set; }
     }
 
@@ -121,6 +113,14 @@ namespace LibMCRcon.Nbt
 
             byte[] payload = Encoding.UTF8.GetBytes(data);
             s.Write(payload, 0, payload.Length);
+        }
+        public static void TagLongArray(Int64[] data, Stream s)
+        {
+            Int32 size = data.Length;
+
+            TagInt(size, s);
+            for (int x = 0; x < size; x++)
+                TagLong(data[x], s);
         }
         public static void TagIntArray(Int32[] data, Stream s)
         {
@@ -298,6 +298,17 @@ namespace LibMCRcon.Nbt
 
 
         }
+        public static Int64[] TagLongArray(Stream s)
+        {
+
+            Int64 size = TagInt(s);
+            Int64[] intarr = new Int64[size];
+            for (int x = 0; x < size; x++)
+                intarr[x] = TagLong(s);
+
+            return intarr;
+
+        }
         public static Int32[] TagIntArray(Stream s)
         {
 
@@ -380,6 +391,10 @@ namespace LibMCRcon.Nbt
                     n = new NbtIntArray();
                     break;
 
+                case NbtType.TAG_array_long:
+                    n = new NbtLongArray();
+                    break;
+
                 case NbtType.TAG_compound:
                     n = new NbtCompound();
                     break;
@@ -389,10 +404,8 @@ namespace LibMCRcon.Nbt
                     break;
 
                 default:
-                    n = new NbtByte();
+                    throw new Exception("NBT Tag Invalid");
 
-
-                    break;
             }
 
 
@@ -464,10 +477,9 @@ namespace LibMCRcon.Nbt
 
 
     }
-
     public abstract class NbtTag<T> : NbtBase
     {
-
+        
         public virtual T tagvalue { get; set; }
         public abstract override void WriteStream(Stream s);
         public abstract override void ReadStream(Stream s);
@@ -476,15 +488,12 @@ namespace LibMCRcon.Nbt
 
     public class NbtCompound : NbtTag<List<NbtBase>>
     {
-
         public NbtCompound()
         {
             tagtype = NbtType.TAG_compound;
             tagvalue = new List<NbtBase>();
             tagname = string.Empty;
         }
-
-
         public NbtBase this[int idx]
         {
             get
@@ -559,7 +568,27 @@ namespace LibMCRcon.Nbt
             }
         }
     }
+    public class NbtLongArray : NbtTag<Int64[]>
+    {
+        public NbtLongArray()
+        {
+            tagtype = NbtType.TAG_array_long;
+            tagvalue = new Int64[1];
+            tagname = string.Empty;
 
+        }
+
+
+        public int size { get { return tagvalue.GetLength(0); } }
+        public override void WriteStream(Stream s)
+        {
+            NbtWriter.TagLongArray(tagvalue, s);
+        }
+        public override void ReadStream(Stream s)
+        {
+            tagvalue = NbtReader.TagLongArray(s);
+        }
+    }
     public class NbtIntArray : NbtTag<Int32[]>
     {
         public NbtIntArray()
@@ -765,6 +794,7 @@ namespace LibMCRcon.Nbt
             return;
         }
     }
+
 }
 
 
