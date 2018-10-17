@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28010.2036
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib-rcon", "lib-rcon\lib-rcon.csproj", "{08D4F035-0488-4348-B8D5-3F38D7F757A3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{08D4F035-0488-4348-B8D5-3F38D7F757A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{08D4F035-0488-4348-B8D5-3F38D7F757A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{08D4F035-0488-4348-B8D5-3F38D7F757A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{08D4F035-0488-4348-B8D5-3F38D7F757A3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9BAB31E4-43F2-4592-875C-4D6A66D45EA6}
+	EndGlobalSection
+EndGlobal

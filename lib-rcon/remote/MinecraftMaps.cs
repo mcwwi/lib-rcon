@@ -101,8 +101,8 @@ namespace LibMCRcon.Remote
             return b;
         }
 
-        public static int WorldRegionIndex(int Regions) => (int)(Math.Log(Regions) / Math.Log(2));
-        public static int IndexToRegions(int RegionIndex) => (int)(Math.Pow(2, RegionIndex));
+        public static int WorldRegionIndex(int Region) => (int)(Math.Log(Region) / Math.Log(2));
+        public static int IndexToWorldRegion(int RegionIndex) => (int)(Math.Pow(2, RegionIndex));
         public static bool RenderTopo(Rendering.BlockColors bc, WorldVoxelEx wv, string RegionDirectory, string ImgsDirectory)
         {
             
@@ -156,19 +156,7 @@ namespace LibMCRcon.Remote
             }
 
         }
-        public static bool RenderTiles(string RegionDirectory, string ImgsDirectory, Process TogosJavaProc)
-        {
-            //TogosJavaProc should be set to run Togos TCMCR region tile generator
 
-            TogosJavaProc.StartInfo.Arguments = $@"-jar {Path.Combine(TogosJavaProc.StartInfo.WorkingDirectory, "tmcmr.jar")} -o {ImgsDirectory} {RegionDirectory}\*.mca";
-            var started = TogosJavaProc.Start();
-
-            if (started)
-                TogosJavaProc.WaitForExit();
-
-            return !started;
-        }
-       
 
         public static void Stitch(WorldVoxelEx wv, string ImgPath, MCTransfer Tiles, MCTransfer Maps, int Regions = 2, bool TransferBack = true)
         {
@@ -220,8 +208,6 @@ namespace LibMCRcon.Remote
             }
 
         }
-
-
         public static async Task StitchAsync(WorldVoxelEx wv, string ImgPath, MCTransferAsync Tiles, MCTransferAsync Maps, int Regions = 2, bool TransferBack = true)
         {
 
@@ -279,6 +265,19 @@ namespace LibMCRcon.Remote
             await Task.WhenAll(MakeImage("tile"), MakeImage("topo"));
 
 
+        }
+
+        public static bool RenderTiles(string RegionDirectory, string ImgsDirectory, Process TogosJavaProc)
+        {
+            //TogosJavaProc should be set to run Togos TCMCR region tile generator
+
+            TogosJavaProc.StartInfo.Arguments = $@"-jar {Path.Combine(TogosJavaProc.StartInfo.WorkingDirectory, "tmcmr.jar")} -o {ImgsDirectory} {RegionDirectory}\*.mca";
+            var started = TogosJavaProc.Start();
+
+            if (started)
+                TogosJavaProc.WaitForExit();
+
+            return !started;
         }
     }
     public class MinecraftWorldRender:WorldVoxelEx

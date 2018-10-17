@@ -135,7 +135,6 @@ namespace LibMCRcon.Rendering
     {
         public List<KeyValuePair<string, Color>> BlockPalettes { get; private set; } = new List<KeyValuePair<string, Color>>();
         public List<string> Defaulted { get; private set; } = new List<string>();
-
         public BlockColors()
         {
 
@@ -326,11 +325,12 @@ namespace LibMCRcon.Rendering
 
                     if (wMap[gI] < 255)
 
-                        if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
-                        {
-                            int cI = ((zz - 1) * 512) + xx - 1;
 
-                             if (hMap[cI] > hMap[gI])
+                        if(zz > 1)
+                        {
+                            int cI = ((zz - 1) * 512) + xx;
+
+                            if (hMap[cI] > hMap[gI])
                                 bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(25, 25, 175), 0));
                             else if (hMap[cI] < hMap[gI])
                                 bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(75, 75, 255), 0));
@@ -338,7 +338,30 @@ namespace LibMCRcon.Rendering
                                 bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(50, 50, 200), 0));
                         }
                         else
-                            bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(50, 50, 200), 0));
+                        {
+                            int cI = ((zz + 1) * 512) + xx;
+
+                            if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(75, 75, 255), 0));
+                            else if (hMap[cI] < hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(25, 25, 175), 0));
+                            else
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(50, 50, 200), 0));
+                        }
+
+                        //if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
+                        //{
+                        //    int cI = ((zz - 1) * 512) + xx - 1;
+
+                        //     if (hMap[cI] > hMap[gI])
+                        //        bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(25, 25, 175), 0));
+                        //    else if (hMap[cI] < hMap[gI])
+                        //        bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(75, 75, 255), 0));
+                        //    else
+                        //        bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(50, 50, 200), 0));
+                        //}
+                        //else
+                        //    bit.SetPixel(xx, zz, ColorStep.MixColors(10, BlockData[gI], Color.FromArgb(50, 50, 200), 0));
 
 
 
@@ -346,19 +369,28 @@ namespace LibMCRcon.Rendering
                     else
                     {
 
-                        if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
+                        if (zz > 1)
                         {
-                            int cI = ((zz - 1) * 512) + xx - 1;
+                            int cI = ((zz - 1) * 512) + xx;
 
-                             if (hMap[cI] > hMap[gI])
-                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, BlockData[gI], Color.FromArgb(80,80,80), 0));
-                             else if (hMap[cI] < hMap[gI])
+                            if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, BlockData[gI], Color.FromArgb(80, 80, 80), 0));
+                            else if (hMap[cI] < hMap[gI])
                                 bit.SetPixel(xx, zz, ColorStep.MixColors(0, BlockData[gI], Color.FromArgb(200, 200, 200), 0));
                             else
                                 bit.SetPixel(xx, zz, BlockData[gI]);
                         }
                         else
-                        bit.SetPixel(xx, zz, BlockData[gI]);
+                        {
+                            int cI = ((zz + 1) * 512) + xx ;
+
+                            if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, BlockData[gI], Color.FromArgb(80, 80, 80), 0));
+                            else if (hMap[cI] < hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, BlockData[gI], Color.FromArgb(200, 200, 200), 0));
+                            else
+                                bit.SetPixel(xx, zz, BlockData[gI]);
+                        }
                     }
                 }
 
@@ -393,12 +425,9 @@ namespace LibMCRcon.Rendering
 
                     if (hWMap[gI] < 255)
 
-
-
-
-                        if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
+                        if (zz > 1 )
                         {
-                            int cI = ((zz - 1) * 512) + xx - 1;
+                            int cI = ((zz - 1) * 512) + xx ;
                             if (hMap[cI] > hMap[gI])
                                 bit.SetPixel(xx, zz, ColorStep.MixColors(0, wRGB[hWMap[gI]], Color.White, 0));
                             else if (hMap[cI] < hMap[gI])
@@ -407,17 +436,22 @@ namespace LibMCRcon.Rendering
                                 bit.SetPixel(xx, zz, wRGB[hWMap[gI]]);
                         }
                         else
-                            bit.SetPixel(xx, zz, wRGB[hWMap[gI]]);
-
+                        {
+                            int cI = ((zz + 1) * 512) + xx;
+                            if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, wRGB[hWMap[gI]], Color.White, 0));
+                            else if (hMap[cI] < hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, wRGB[hWMap[gI]], Color.DarkGray, 0));
+                            else
+                                bit.SetPixel(xx, zz, wRGB[hWMap[gI]]);
+                        }
 
                     else
                     {
 
-
-
-                        if (xx > 1 && xx < 511 && zz > 1 && zz < 511)
+                        if (zz > 1)
                         {
-                            int cI = ((zz - 1) * 512) + xx - 1;
+                            int cI = ((zz - 1) * 512) + xx;
 
                             if (hMap[cI] > hMap[gI])
                                 bit.SetPixel(xx, zz, ColorStep.MixColors(0, tRGB[hMap[gI]], Color.White, 0));
@@ -427,8 +461,16 @@ namespace LibMCRcon.Rendering
                                 bit.SetPixel(xx, zz, tRGB[hMap[gI]]);
                         }
                         else
-                            bit.SetPixel(xx, zz, tRGB[hMap[gI]]);
+                        {
+                            int cI = ((zz + 1) * 512) + xx;
 
+                            if (hMap[cI] > hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, tRGB[hMap[gI]], Color.White, 0));
+                            else if (hMap[cI] < hMap[gI])
+                                bit.SetPixel(xx, zz, ColorStep.MixColors(0, tRGB[hMap[gI]], Color.DarkGray, 0));
+                            else
+                                bit.SetPixel(xx, zz, tRGB[hMap[gI]]);
+                        }
 
                     }
                 }

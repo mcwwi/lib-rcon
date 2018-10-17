@@ -58,7 +58,7 @@ namespace LibMCRcon.WorldData
                 lastX = RegionX;
                 lastZ = RegionZ;
               
-                FileInfo f = Remote.MinecraftFile.FileInfo(Remote.MineCraftRegionFileKind.MCA, lastX, lastZ, mcaFilePath);
+                FileInfo f = new FileInfo(Path.Combine(mcaFilePath, $@"r.{lastX}.{lastZ}.mca"));
 
                 LastModified = DateTime.MaxValue;
 
