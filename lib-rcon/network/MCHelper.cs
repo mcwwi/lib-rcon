@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using LibMCRcon.WorldData;
+using System.Threading.Tasks;
+
 
 
 
@@ -241,6 +243,13 @@ namespace LibMCRcon.RCon
             return r;
 
         }
+        public static async Task<TCPRconAsync> ActivateRconAsync(string Host, int port, string password)
+        {
+            var r = new TCPRconAsync(Host, port, password);
+            await r.StartComms();
+            return r;
+
+        }
         public static List<string> LoadPlayers(TCPRcon r, StringBuilder sb)
         {
 
@@ -252,6 +261,8 @@ namespace LibMCRcon.RCon
 
                 try
                 {
+                    r.Clear();
+
                     string resp = r.ExecuteCmd("list");
 
                     string[] list_cmd = resp.Split(':');
@@ -260,7 +271,7 @@ namespace LibMCRcon.RCon
                 }
                 catch (Exception ee)
                 {
-                    list_players = new string[] { "NO_ONE_ONLINE" };
+                    list_players = new string[] {};
                     sb.AppendFormat(@"{0} => Connection:{1}, Network:{2}", ee.Message, r.LastTCPError, r.StateTCP, r.StateRCon);
 
                 }

@@ -49,6 +49,61 @@ namespace LibMCRcon.WorldData
 
         public void LoadRegion() { LoadRegion(Xs, Zs); }
 
+        public void LoadRegion(Stream Data, int RegionX, int RegionZ, DateTime Modified)
+        {
+            SetSegmentOffset(RegionX, RegionZ, 0, 0);
+
+            if (lastX != RegionX || lastZ != RegionZ)
+            {
+                lastX = RegionX;
+                lastZ = RegionZ;
+
+                LastModified = Modified;
+
+
+                for (int c = 0; c < 1024; c++)
+                    chunks[c] = null;
+
+                Count = 0;
+
+
+                using (Stream fs = Data)
+                {
+
+                    for (int c = 0; c < 1024; c++)
+                    {
+                        chunkhdr[c] = NbtReader.TagInt24(fs) * 4096;
+                        chunksect[c] = NbtReader.TagByte(fs) * 4096;
+                    }
+
+                    for (int c = 0; c < 1024; c++)
+                        timehdr[c] = DateTime.FromBinary(NbtReader.TagInt(fs));
+
+
+                    for (int c = 0; c < 1024; c++)
+                    {
+
+                        try
+                        {
+                            fs.Seek(chunkhdr[c], SeekOrigin.Begin);
+                            chunks[c] = new ChunkMCA(chunkhdr[c], chunksect[c], fs);
+                            Count += 1;
+                        }
+                        catch (Exception)
+                        {
+                            break;
+                        }
+
+                    }
+
+                    fs.Close();
+                }
+
+
+            }
+
+        }
+
         public void LoadRegion(int RegionX, int RegionZ)
         {
             SetSegmentOffset(RegionX, RegionZ, 0, 0);

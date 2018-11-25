@@ -12,6 +12,40 @@ namespace LibMCRcon.Remote
 {
     public static class MinecraftRender
     {
+        public async static Task<byte[][]> hdt(MCTransferAsync data, int worldX, int worldZ)
+        {
+            var w = new WorldVoxelEx() { R = 1, X = worldX, Z = worldZ };
+
+            byte[][] map = new byte[2][];
+
+            var hd = new byte[512 * 512];
+
+            var hdt = $"r.{w.Xs}.{w.Zs}.hdt";
+
+            using (var mem = new MemoryStream())
+            {
+
+                if (await data.TransferNext(hdt, mem, TxRx.RECEIVE))
+                {
+                    mem.Position = 0;
+
+                    mem.Read(hd, 0, 512 * 512);
+                    map[0] = hd;
+
+                    hd = new byte[512 * 512];
+                    mem.Read(hd, 0, 512 * 512);
+                    map[1] = hd;
+                }
+                else
+                {
+                    map[0] = new byte[512 * 512];
+                    map[1] = new byte[512 * 512];
+                }
+            }
+
+            return map;
+        }
+
         public static Bitmap GetImg(string filename, Size Scale)
         {
             Bitmap fb;
@@ -103,6 +137,62 @@ namespace LibMCRcon.Remote
 
         public static int WorldRegionIndex(int Region) => (int)(Math.Log(Region) / Math.Log(2));
         public static int IndexToWorldRegion(int RegionIndex) => (int)(Math.Pow(2, RegionIndex));
+
+        public static bool RenderTopo(Rendering.BlockColors bc, WorldVoxelEx wv, string RegionsDirectory, string ImgsDirectory, Stream Data, DateTime DataModified)
+        {
+
+            if (wv.R > 1)
+                return false;
+
+            byte[][] MapData = new byte[][] { new byte[512 * 512], new byte[512 * 512] };
+            Color[] BlockData = new Color[512 * 512];
+
+            RegionMCA mca = new RegionMCA();
+
+
+            mca.LoadRegion(Data, wv.Xs, wv.Zs, DataModified);
+
+            try
+            {
+                Rendering.MCRegionMaps.RenderDataFromRegion(bc, mca, MapData, BlockData);
+                Rendering.MCRegionMaps.RenderTopoPngFromRegion(MapData, ImgsDirectory, wv.Xs, wv.Zs);
+                Rendering.MCRegionMaps.RenderBlockPngFromRegion(MapData, BlockData, ImgsDirectory, wv.Xs, wv.Zs);
+
+
+                FileInfo mcaH = new FileInfo(Path.Combine(RegionsDirectory, $"r{wv.BaseFilename()}.hdt"));
+
+                using (FileStream tempFS = mcaH.Create())
+                {
+
+                    tempFS.Write(MapData[0], 0, 512 * 512);
+                    tempFS.Write(MapData[1], 0, 512 * 512);
+                    tempFS.Flush();
+                    tempFS.Close();
+
+                }
+
+                mcaH.LastWriteTime = mca.LastModified;
+
+                FileInfo lwFS = new FileInfo(Path.Combine(ImgsDirectory, $"topo{wv.BaseFilename()}.png"));
+                if (lwFS.Exists)
+                    lwFS.LastWriteTime = mca.LastModified;
+
+                lwFS = new FileInfo(Path.Combine(ImgsDirectory, $"tile{wv.BaseFilename()}.png"));
+                if (lwFS.Exists)
+                    lwFS.LastWriteTime = mca.LastModified;
+
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+
+                // Debug.Print(ex.Message);
+                return false;
+            }
+
+        }
+
         public static bool RenderTopo(Rendering.BlockColors bc, WorldVoxelEx wv, string RegionDirectory, string ImgsDirectory)
         {
             
@@ -288,7 +378,7 @@ namespace LibMCRcon.Remote
         public bool Rendered { get; set; } = false;
         public MinecraftWorldRender ToWorldRender(int Regions) => new MinecraftWorldRender() { R = Regions, X = X, Z = Z, Y = Y };
 
-        
+        public DateTime Modified { get; set; }
 
     }
     public class MinecraftMapsTransferBatch

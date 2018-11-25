@@ -22,7 +22,8 @@ namespace LibMCRcon.Remote
             MinListDate = DateTime.MaxValue;
             MaxListDate = DateTime.MinValue;
         }
-        public MCInfoList(List<MCInfo> RemoteList, TimeSpan Age)
+
+        public MCInfoList(List<MCInfo> RemoteList, TimeSpan Age, List<string> Files = null)
         {
             this.RemoteList = RemoteList ?? new List<MCInfo>();
 
@@ -31,9 +32,9 @@ namespace LibMCRcon.Remote
             FilterDate = DateTime.Now - Age;
 
             RemoteList.ForEach(x => CalculateAge(x));
-            FilterList(FilterDate);
+            FilterList(FilterDate,Files);
         }
-
+        
         private void CalculateAge(MCInfo mcf)
         {
             if (mcf.RemoteLastWrite < MinListDate)
@@ -42,10 +43,18 @@ namespace LibMCRcon.Remote
             if (mcf.RemoteLastWrite > MaxListDate)
                 MaxListDate = mcf.RemoteLastWrite;
         }
-        public void FilterList(DateTime Cuttoff)
+
+        public void FilterList(DateTime Cuttoff, List<string> Files = null)
         {
             FilteredList = new List<MCInfo>();
-            RemoteList.ForEach(x => { if (x.RemoteLastWrite >= Cuttoff) FilteredList.Add(x); });
+            RemoteList.ForEach(x => 
+            {
+                if (x.RemoteLastWrite >= Cuttoff)
+                    FilteredList.Add(x);
+                else if (Files.Find(f => f.Equals(x.FileName,StringComparison.OrdinalIgnoreCase)) != null)
+                    FilteredList.Add(x);
+
+            });
         }
     }
     public class MCInfo
@@ -509,7 +518,7 @@ namespace LibMCRcon.Remote
                         var js = System.Text.Encoding.UTF8.GetString(mem.ToArray());
                         return new MCTransferJson<T>(JsonConvert.DeserializeObject<T>(js));
                     }
-                    catch
+                    catch(Exception)
                     {
                         LastTransferSuccess = false;
                         throw;

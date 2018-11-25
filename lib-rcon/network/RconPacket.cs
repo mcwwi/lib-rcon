@@ -2,6 +2,7 @@
 
 using System.Text;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 
 
@@ -114,6 +115,28 @@ namespace LibMCRcon.RCon
                 isBadPacket = true;
             }
         }
+        public async Task SendToNetworkStreamAsync(NetworkStream NS)
+        {
+            isBadPacket = false;
+            byte[] dataout = new byte[size + 4];
+
+            dataout = fillByteArray(dataout, BitConverter.GetBytes(size), 0, 4);
+            dataout = fillByteArray(dataout, BitConverter.GetBytes(SessionID), 4, 4);
+            dataout = fillByteArray(dataout, BitConverter.GetBytes(packettype), 8, 4);
+            dataout = fillByteArray(dataout, Encoding.ASCII.GetBytes(cmd), 12, cmd.Length);
+            dataout[size + 2] = 0;
+            dataout[size + 3] = 0;
+
+            try
+            {
+                await NS.WriteAsync(dataout, 0, dataout.Length);
+
+            }
+            catch (Exception)
+            {
+                isBadPacket = true;
+            }
+        }
         /// <summary>
         /// Read from the network stream the next valid RCon packet. Will block until completed or an error detected.
         /// </summary>
@@ -125,44 +148,158 @@ namespace LibMCRcon.RCon
 
             isBadPacket = false;
 
+            bool FullRead(byte[] Buffer, int TotalBytes)
+            {
+
+                var idx = 0;
+                var count = TotalBytes;
+
+                var rx = NS.Read(Buffer, idx, TotalBytes);
+                
+                while (rx < count)
+                {
+
+                    if (rx == 0)
+                        return false;
+
+                    idx += rx;
+                    count -= rx;
+
+                    rx = NS.Read(Buffer, idx, count);
+                }
+
+                return true;
+            }
 
             try
             {
 
-                NS.Read(s, 0, 4);
-                size = BitConverter.ToInt32(s, 0);
 
-                if (size >= 10 && size < 4096)
+                if (FullRead(s, 4))
                 {
-                    byte[] data = new byte[size];
-                    NS.Read(data, 0, size);
+                    size = BitConverter.ToInt32(s, 0);
 
-                    SessionID = BitConverter.ToInt32(data, 0);
-                    packettype = BitConverter.ToInt32(data, 4);
-
-                    if ((size - 10) > 0)
+                    if (size >= 10 && size < 4096)
                     {
+                        byte[] data = new byte[size];
+                        if (FullRead(data, size))
+                        {
 
-                        response = Encoding.ASCII.GetString(data, 8, size - 10);
+                            SessionID = BitConverter.ToInt32(data, 0);
+                            packettype = BitConverter.ToInt32(data, 4);
 
+                            if ((size - 10) > 0)
+                            {
+
+                                response = Encoding.ASCII.GetString(data, 8, size - 10);
+
+                            }
+
+                            endzeros = BitConverter.ToInt16(data, size - 2);
+
+
+                            if (endzeros != 0)
+                            {
+                                //frame is bad - always ends in 2 zeros..
+
+                                isBadPacket = true;
+                            }
+                        }
+                        else
+                            isBadPacket = true;
                     }
-
-                    endzeros = BitConverter.ToInt16(data, size - 2);
-
-
-                    if (endzeros != 0)
-                    {
-                        //frame is bad - always ends in 2 zeros..
+                    else
 
                         isBadPacket = true;
-                    }
+
+
+
                 }
                 else
-
                     isBadPacket = true;
+            }
+
+            catch (Exception e)
+            {
+                isBadPacket = true;
+                response = e.Message;
+
+            }
+
+
+        }
+
+       
+
+        public async Task ReadFromNetworkSteamAsync(NetworkStream NS)
+        {
+            byte[] s = new byte[4];
+            Int16 endzeros;
+
+            isBadPacket = false;
+
+            async Task<bool> FullReadAsync(byte[] Buffer, int TotalBytes)
+            {
+
+                var idx = 0;
+                var count = TotalBytes;
+
+                var rx = await NS.ReadAsync(Buffer, idx, TotalBytes);
+
+                while (rx < count)
+                {
+
+                    if (rx == 0)
+                        return false;
+
+                    idx += rx;
+                    count -= rx;
+
+                    rx = await NS.ReadAsync(Buffer, idx, count);
+                }
+
+                return true;
+            }
+
+            try
+            {
+                if (await FullReadAsync(s, 4))
+                {
+
+                    size = BitConverter.ToInt32(s, 0);
+
+                    if (size >= 10 && size < 4096)
+                    {
+                        byte[] data = new byte[size];
+
+                        if (await FullReadAsync(data, size))
+                        {
 
 
 
+                            SessionID = BitConverter.ToInt32(data, 0);
+                            packettype = BitConverter.ToInt32(data, 4);
+
+                            if ((size - 10) > 0)
+                                response = Encoding.ASCII.GetString(data, 8, size - 10);
+
+                            endzeros = BitConverter.ToInt16(data, size - 2);
+
+
+                            if (endzeros != 0)
+                                isBadPacket = true;
+                        }
+                        else
+                            isBadPacket = true;
+                    }
+                    else
+                        isBadPacket = true;
+
+
+
+                }
+                else
+                    isBadPacket = true;
             }
             catch (Exception e)
             {
